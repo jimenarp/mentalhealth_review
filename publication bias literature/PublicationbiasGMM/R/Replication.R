@@ -1,0 +1,45 @@
+#Install Packages:
+install.packages("RColorBrewer")
+library(RColorBrewer)
+
+install.packages("latex2exp")
+library(latex2exp)
+
+install.packages("xtable")
+library(xtable)
+
+install.packages("here")
+library(here)
+
+#Import data
+#Deworming
+data_deworming <- read.csv(here("Data","deworming","cleaned_deworming_data.csv"),header = FALSE)
+data_deworming=as.matrix(data_deworming)
+
+Studynames <- read.csv(here("Data","deworming","DewormingLabels.csv"))
+Studynames=as.character(Studynames[,1])
+
+X=as.matrix(data_deworming[,1])
+sigma=as.matrix(data_deworming[,2])
+cluster_ID=as.matrix(data_deworming[,3])
+
+symmetric=1
+cutoffs=1.96
+
+PublicationbiasGMM(X,sigma,cluster_ID,symmetric,cutoffs,Studynames)
+
+#Minimum Wage
+data_minwage <- read.csv(here("Data","MinimumWagev2","cleaned_minwage_data.csv"),header = FALSE)
+data_minwage=as.matrix(data_minwage)
+
+X=as.matrix(data_minwage[,1])
+X=-X
+sigma=as.matrix(data_minwage[,2])
+cluster_ID=as.matrix(data_minwage[,3])
+
+symmetric=0
+cutoffs=c(-1.96,0,1.96)
+
+Studynames<-vector(mode="character", length=length(X))
+
+PublicationbiasGMM(X,sigma,cluster_ID,symmetric,cutoffs,Studynames)

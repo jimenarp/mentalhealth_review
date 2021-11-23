@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1620408094910.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "803C1C42",
+    "lastKnownWriteTime" : 1620417356,
+    "last_content_update" : 1620417356316,
+    "path" : "~/Dropbox/Migration/Drafts/tables/laboral_jessoe_table3_hetmig.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "251,0",
+        "scrollLine" : "224",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 7,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

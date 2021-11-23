@@ -1,0 +1,367 @@
+# Agricultural Census 2007
+rm(list=ls()) # erase all
+
+packages_vector <- c("foreign", "ggplot2",'tidyverse', 'dplyr', 'plyr', 'pastecs', 'Hmisc','doBy','expss','vtable' )
+
+#install.packages(packages_vector)
+lapply(packages_vector, require, character.only = TRUE) # the "lapply" function means "apply this function to the elements of this list or more restricted data type")
+
+#### directory
+
+indir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/raw/cenagro2007"
+setwd(indir)
+data_maiz = read.spss("S03A.sav", to.data.frame=TRUE)
+select<-dplyr::select
+c<-data_maiz %>% select(DEPID, DEPDSC) %>% group_by(DEPID) %>%
+  summarise(
+    first = first(DEPDSC))
+
+c<-data_maiz %>% mutate(DEPID=as.numeric(DEPID)) %>% 
+  mutate(geoid=paste(DEPID,MUNID, sep='')) %>% 
+           select(geoid, MUNDSC) %>% 
+           group_by(geoid) %>%
+  summarise(
+    first = first(MUNDSC))
+  
+  
+data_maiz<-data_maiz %>% mutate(DEPID=as.numeric(DEPID)) %>% mutate(geoid=paste(DEPID,MUNID, sep='')) 
+
+
+data_maiz$departamento[data_maiz$DEPID==1]<-"Ahuachapán"
+data_maiz$departamento[data_maiz$DEPID==2]<-"Santa Ana"
+data_maiz$departamento[data_maiz$DEPID==3]<-"Sonsonate"
+data_maiz$departamento[data_maiz$DEPID==4]<-"Chalatenango"
+data_maiz$departamento[data_maiz$DEPID==5]<-"La Libertad"
+data_maiz$departamento[data_maiz$DEPID==6]<-"San Salvador"
+data_maiz$departamento[data_maiz$DEPID==7]<-"Cuscatlán"
+data_maiz$departamento[data_maiz$DEPID==8]<-"La Paz"
+data_maiz$departamento[data_maiz$DEPID==9]<-"Cabañas"
+data_maiz$departamento[data_maiz$DEPID==10]<-"San Vicente"
+data_maiz$departamento[data_maiz$DEPID==11]<-"Usulután"
+data_maiz$departamento[data_maiz$DEPID==12]<-"San Miguel"
+data_maiz$departamento[data_maiz$DEPID==13]<-"Morazán"
+data_maiz$departamento[data_maiz$DEPID==14]<-"La Unión"
+    
+
+data_maiz$municipio[data_maiz$geoid==101]<-"Ahuachapán"
+data_maiz$municipio[data_maiz$geoid==102]<-"Apaneca"
+data_maiz$municipio[data_maiz$geoid==103]<-"Atiquizaya"
+data_maiz$municipio[data_maiz$geoid==104]<-"Concepción de Ataco"
+data_maiz$municipio[data_maiz$geoid==105]<-"El Refugio"
+data_maiz$municipio[data_maiz$geoid==106]<-"Guaymango"
+data_maiz$municipio[data_maiz$geoid==107]<-"Jujutla"
+data_maiz$municipio[data_maiz$geoid==108]<-"San Francisco Menéndez"
+data_maiz$municipio[data_maiz$geoid==109]<-"San Lorenzo"
+data_maiz$municipio[data_maiz$geoid==110]<-"San Pedro Puxtla"
+data_maiz$municipio[data_maiz$geoid==111]<-"Tacuba"
+data_maiz$municipio[data_maiz$geoid==112]<-"Turín"
+
+data_maiz$municipio[data_maiz$geoid==201]<-"Candelaria de la Frontera"
+data_maiz$municipio[data_maiz$geoid==202]<-"Coatepeque"
+data_maiz$municipio[data_maiz$geoid==203]<-"Chalchuapa"
+data_maiz$municipio[data_maiz$geoid==204]<-"El Congo"
+data_maiz$municipio[data_maiz$geoid==205]<-"El Porvenir"
+data_maiz$municipio[data_maiz$geoid==206]<-"Masahuat"
+data_maiz$municipio[data_maiz$geoid==207]<-"Metapán"
+data_maiz$municipio[data_maiz$geoid==208]<-"San Antonio Pajonal"
+data_maiz$municipio[data_maiz$geoid==209]<-"San Sebastián Salitrillo"
+data_maiz$municipio[data_maiz$geoid==210]<-"Santa Ana"
+data_maiz$municipio[data_maiz$geoid==211]<-"Santa Rosa Guachipilín"
+data_maiz$municipio[data_maiz$geoid==212]<-"Santiago de la Frontera"
+data_maiz$municipio[data_maiz$geoid==213]<-"Texistepeque"
+
+data_maiz$municipio[data_maiz$geoid==301]<-"Acajutla"
+data_maiz$municipio[data_maiz$geoid==302]<-"Armenia"
+data_maiz$municipio[data_maiz$geoid==303]<-"Caluco"
+data_maiz$municipio[data_maiz$geoid==304]<-"Cuisnahuat"
+data_maiz$municipio[data_maiz$geoid==305]<-"Santa Isabel Ishuatán"
+data_maiz$municipio[data_maiz$geoid==306]<-"Izalco"
+data_maiz$municipio[data_maiz$geoid==307]<-"Juayúa"
+data_maiz$municipio[data_maiz$geoid==308]<-"Nahuizalco"
+data_maiz$municipio[data_maiz$geoid==309]<-"Nahulingo"
+data_maiz$municipio[data_maiz$geoid==310]<-"Salcoatitán"
+data_maiz$municipio[data_maiz$geoid==311]<-"San Antonio del Monte"
+data_maiz$municipio[data_maiz$geoid==312]<-"San Julián"
+data_maiz$municipio[data_maiz$geoid==313]<-"Santa Catarina Masahuat"
+data_maiz$municipio[data_maiz$geoid==314]<-"Santo Domingo"
+data_maiz$municipio[data_maiz$geoid==315]<-"Sonsonate"
+data_maiz$municipio[data_maiz$geoid==316]<-"Sonzacate"
+
+
+data_maiz$municipio[data_maiz$geoid==401]<-"Agua Caliente"
+data_maiz$municipio[data_maiz$geoid==402]<-"Arcatao"
+data_maiz$municipio[data_maiz$geoid==403]<-"Azacualpa"
+
+data_maiz$municipio[data_maiz$geoid==404]<-"Citalá"
+data_maiz$municipio[data_maiz$geoid==405]<-"Comalapa"
+data_maiz$municipio[data_maiz$geoid==406]<-"Concepción Quezaltepeque"
+data_maiz$municipio[data_maiz$geoid==407]<-"Chalatenango"
+data_maiz$municipio[data_maiz$geoid==408]<-"Dulce Nombre de María"
+data_maiz$municipio[data_maiz$geoid==409]<-"El Carrizal"
+data_maiz$municipio[data_maiz$geoid==410]<-"El Paraíso"
+data_maiz$municipio[data_maiz$geoid==411]<-"La Laguna"
+data_maiz$municipio[data_maiz$geoid==412]<-"La Palma"
+data_maiz$municipio[data_maiz$geoid==413]<-"La Reina"
+data_maiz$municipio[data_maiz$geoid==414]<-"Las Vueltas"
+data_maiz$municipio[data_maiz$geoid==415]<-"Nombre de Jesús"
+data_maiz$municipio[data_maiz$geoid==416]<-"Nueva Concepción"
+data_maiz$municipio[data_maiz$geoid==417]<-"Nueva Trinidad"
+
+data_maiz$municipio[data_maiz$geoid==418]<-"Ojos de Agua"
+data_maiz$municipio[data_maiz$geoid==419]<-"Potonico"
+data_maiz$municipio[data_maiz$geoid==420]<-"San Antonio de la Cruz"
+data_maiz$municipio[data_maiz$geoid==421]<-"San Antonio Los Ranchos" ### no hay en ehpm
+data_maiz$municipio[data_maiz$geoid==422]<-"San Fernando"
+data_maiz$municipio[data_maiz$geoid==423]<-"San Francisco Lempa"
+
+data_maiz$municipio[data_maiz$geoid==424]<-"San Francisco Morazán"
+
+data_maiz$municipio[data_maiz$geoid==425]<-"San Ignacio"
+data_maiz$municipio[data_maiz$geoid==426]<-"San Isidro Labrador"
+
+data_maiz$municipio[data_maiz$geoid==427]<-"San José Cancasque"
+
+data_maiz$municipio[data_maiz$geoid==428]<-"San José Las Flores" ### no hay en ehpm
+data_maiz$municipio[data_maiz$geoid==429]<-"San Luis del Carmen" ### no hay en ehpm
+data_maiz$municipio[data_maiz$geoid==430]<-"San Miguel de Mercedes" ### no hay en ehpm
+data_maiz$municipio[data_maiz$geoid==431]<-"San Rafael"
+data_maiz$municipio[data_maiz$geoid==432]<-"Santa Rita"
+data_maiz$municipio[data_maiz$geoid==433]<-"Tejutla"
+
+data_maiz$municipio[data_maiz$geoid==501]<-"Antiguo Cuscatlán"
+data_maiz$municipio[data_maiz$geoid==502]<-"Ciudad Arce"
+data_maiz$municipio[data_maiz$geoid==503]<-"Colón"
+data_maiz$municipio[data_maiz$geoid==504]<-"Comasagua"
+data_maiz$municipio[data_maiz$geoid==505]<-"Chiltiupán"
+data_maiz$municipio[data_maiz$geoid==506]<-"Huizucar"
+
+data_maiz$municipio[data_maiz$geoid==507]<-"Jayaque"
+data_maiz$municipio[data_maiz$geoid==508]<-"Jicalapa"
+data_maiz$municipio[data_maiz$geoid==509]<-"La Libertad"
+data_maiz$municipio[data_maiz$geoid==510]<-"Nuevo Cuscatlan"
+
+data_maiz$municipio[data_maiz$geoid==511]<-"Nueva San Salvador"
+data_maiz$municipio[data_maiz$geoid==512]<-"Quezaltepeque"
+data_maiz$municipio[data_maiz$geoid==513]<-"Sacacoyo"
+data_maiz$municipio[data_maiz$geoid==514]<-"San José Villanueva"
+data_maiz$municipio[data_maiz$geoid==515]<-"Opico"
+data_maiz$municipio[data_maiz$geoid==516]<-"San Matías" ### no hay en ehpm
+data_maiz$municipio[data_maiz$geoid==517]<-"San Pablo Tacachico"
+data_maiz$municipio[data_maiz$geoid==518]<-"Tamanique" ### no hay en ehpm
+data_maiz$municipio[data_maiz$geoid==519]<-"Talnique"
+data_maiz$municipio[data_maiz$geoid==520]<-"Teotepeque"
+data_maiz$municipio[data_maiz$geoid==521]<-"Tepecoyo"
+data_maiz$municipio[data_maiz$geoid==522]<-"Zaragoza"
+
+data_maiz$municipio[data_maiz$geoid==601]<-"Aguilares"
+data_maiz$municipio[data_maiz$geoid==602]<-"Apopa"
+data_maiz$municipio[data_maiz$geoid==603]<-"Ayutuxtepeque"
+data_maiz$municipio[data_maiz$geoid==604]<-"Cuscatancingo"
+data_maiz$municipio[data_maiz$geoid==605]<-"El Paisnal"
+data_maiz$municipio[data_maiz$geoid==606]<-"Guazapa"
+data_maiz$municipio[data_maiz$geoid==607]<-"Ilopango"
+data_maiz$municipio[data_maiz$geoid==608]<-"Mejicanos"
+data_maiz$municipio[data_maiz$geoid==609]<-"Nejapa"
+data_maiz$municipio[data_maiz$geoid==610]<-"Panchimalco"
+data_maiz$municipio[data_maiz$geoid==611]<-"Rosario de Mora"
+data_maiz$municipio[data_maiz$geoid==612]<-"San Marcos"
+data_maiz$municipio[data_maiz$geoid==613]<-"San Martín"
+data_maiz$municipio[data_maiz$geoid==614]<-"San Salvador"
+data_maiz$municipio[data_maiz$geoid==615]<-"Santiago Texacuangos"
+data_maiz$municipio[data_maiz$geoid==616]<-"Santo Tomás"
+data_maiz$municipio[data_maiz$geoid==617]<-"Soyapango"
+data_maiz$municipio[data_maiz$geoid==618]<-"Tonacatepeque"
+data_maiz$municipio[data_maiz$geoid==619]<-"Delgado"
+
+
+data_maiz$municipio[data_maiz$geoid==701]<-"Candelaria"
+data_maiz$municipio[data_maiz$geoid==702]<-"Cojutepeque"
+data_maiz$municipio[data_maiz$geoid==703]<-"El Carmen"
+data_maiz$municipio[data_maiz$geoid==704]<-"El Rosario"
+data_maiz$municipio[data_maiz$geoid==705]<-"Monte San Juan"
+data_maiz$municipio[data_maiz$geoid==706]<-"Oratorio de Concepción"
+data_maiz$municipio[data_maiz$geoid==707]<-"San Bartolomé Perulapía"
+data_maiz$municipio[data_maiz$geoid==708]<-"San Cristóbal"
+data_maiz$municipio[data_maiz$geoid==709]<-"San José Guayabal"
+data_maiz$municipio[data_maiz$geoid==710]<-"San Pedro Perulapán"
+data_maiz$municipio[data_maiz$geoid==711]<-"San Rafael Cedros"
+data_maiz$municipio[data_maiz$geoid==712]<-"San Ramón"
+data_maiz$municipio[data_maiz$geoid==713]<-"Santa Cruz Analquito"
+
+data_maiz$municipio[data_maiz$geoid==714]<-"Santa Cruz Michapa"
+data_maiz$municipio[data_maiz$geoid==715]<-"Suchitoto"
+data_maiz$municipio[data_maiz$geoid==716]<-"Tenancingo"
+data_maiz$municipio[data_maiz$geoid==802]<-"Cuyultitan"
+
+data_maiz$municipio[data_maiz$geoid==802]<-"El Rosario"
+data_maiz$municipio[data_maiz$geoid==803]<-"Jerusalén"
+data_maiz$municipio[data_maiz$geoid==804]<-"Mercedes La Ceiba"
+data_maiz$municipio[data_maiz$geoid==805]<-"Olocuilta"
+data_maiz$municipio[data_maiz$geoid==806]<-"Paraíso de Osorio"### no hay en ehpm
+data_maiz$municipio[data_maiz$geoid==807]<-"San Antonio Masahuat"### no hay en ehpm
+data_maiz$municipio[data_maiz$geoid==808]<-"San Emigdio"
+data_maiz$municipio[data_maiz$geoid==809]<-"San Francisco Chinameca"
+
+data_maiz$municipio[data_maiz$geoid==810]<-"San Juan Nonualco"
+data_maiz$municipio[data_maiz$geoid==811]<-"San Juan Talpa"
+data_maiz$municipio[data_maiz$geoid==812]<-"San Juan Tepezontes"
+data_maiz$municipio[data_maiz$geoid==813]<-"San Luis Talpa"
+data_maiz$municipio[data_maiz$geoid==814]<-"San Miguel Tepezontes"
+data_maiz$municipio[data_maiz$geoid==815]<-"San Pedro Masahuat"
+data_maiz$municipio[data_maiz$geoid==816]<-"San Pedro Nonualco"
+data_maiz$municipio[data_maiz$geoid==817]<-"San Rafael Obrajuelo"
+data_maiz$municipio[data_maiz$geoid==818]<-"Santa María Ostuma"
+data_maiz$municipio[data_maiz$geoid==819]<-"Santiago Nonualco" ### no hay en ehpm
+data_maiz$municipio[data_maiz$geoid==820]<-"Tapalhuaca"
+data_maiz$municipio[data_maiz$geoid==821]<-"Zacatecoluca"
+data_maiz$municipio[data_maiz$geoid==822]<-"San Luis La Herradura"
+
+data_maiz$municipio[data_maiz$geoid==901]<-"Cinquera"
+data_maiz$municipio[data_maiz$geoid==902]<-"Guacotecti"
+data_maiz$municipio[data_maiz$geoid==903]<-"Ilobasco"
+data_maiz$municipio[data_maiz$geoid==904]<-"Jutiapa"
+data_maiz$municipio[data_maiz$geoid==905]<-"San Isidro"
+data_maiz$municipio[data_maiz$geoid==906]<-"Sensuntepeque"
+data_maiz$municipio[data_maiz$geoid==907]<-"Tejutepeque"
+data_maiz$municipio[data_maiz$geoid==908]<-"Victoria"
+data_maiz$municipio[data_maiz$geoid==909]<-"Dolores"
+
+data_maiz$municipio[data_maiz$geoid==1001]<-"Apastepeque"
+data_maiz$municipio[data_maiz$geoid==1002]<-"Guadalupe"
+data_maiz$municipio[data_maiz$geoid==1003]<-"San Cayetano Istepeque"
+data_maiz$municipio[data_maiz$geoid==1004]<-"Santa Clara" ### no hay en ehpm
+data_maiz$municipio[data_maiz$geoid==1005]<-"Santo Domingo"
+data_maiz$municipio[data_maiz$geoid==1006]<-"San Esteban Catarina"
+data_maiz$municipio[data_maiz$geoid==1007]<-"San Ildefonso"
+data_maiz$municipio[data_maiz$geoid==1008]<-"San Lorenzo"
+data_maiz$municipio[data_maiz$geoid==1009]<-"San Sebastián"
+data_maiz$municipio[data_maiz$geoid==1010]<-"San Vicente"
+data_maiz$municipio[data_maiz$geoid==1011]<-"Tecoluca"
+data_maiz$municipio[data_maiz$geoid==1012]<-"Tepetitán"
+data_maiz$municipio[data_maiz$geoid==1013]<-"Verapaz"
+
+data_maiz$municipio[data_maiz$geoid==1101]<-"Alegría"
+data_maiz$municipio[data_maiz$geoid==1102]<-"Berlín"
+data_maiz$municipio[data_maiz$geoid==1103]<-"California" ### no hay en ehpm
+data_maiz$municipio[data_maiz$geoid==1104]<-"Concepción Batres"
+data_maiz$municipio[data_maiz$geoid==1105]<-"El Triunfo"
+data_maiz$municipio[data_maiz$geoid==1106]<-"Ereguayquín" ### no hay en ehpm
+data_maiz$municipio[data_maiz$geoid==1107]<-"Estanzuelas"
+data_maiz$municipio[data_maiz$geoid==1108]<-"Jiquilisco"
+data_maiz$municipio[data_maiz$geoid==1109]<-"Jucuapa"
+data_maiz$municipio[data_maiz$geoid==1110]<-"Jucuarán"
+data_maiz$municipio[data_maiz$geoid==1111]<-"Mercedes Umaña"
+data_maiz$municipio[data_maiz$geoid==1112]<-"Nueva Granada"  ### no hay en ehpm
+data_maiz$municipio[data_maiz$geoid==1113]<-"Ozatlán"  ### no hay en ehpm
+data_maiz$municipio[data_maiz$geoid==1114]<-"Puerto El Triunfo"
+data_maiz$municipio[data_maiz$geoid==1115]<-"San Agustín"
+data_maiz$municipio[data_maiz$geoid==1116]<-"San Bunea Ventura"
+
+data_maiz$municipio[data_maiz$geoid==1117]<-"San Dionisio"
+data_maiz$municipio[data_maiz$geoid==1118]<-"Santa Elena"
+data_maiz$municipio[data_maiz$geoid==1119]<-"San Francisco Javier"
+data_maiz$municipio[data_maiz$geoid==1120]<-"Santa María"
+data_maiz$municipio[data_maiz$geoid==1121]<-"Santiago de María"
+data_maiz$municipio[data_maiz$geoid==1122]<-"Tecapán"
+data_maiz$municipio[data_maiz$geoid==1123]<-"Usulután"
+
+data_maiz$municipio[data_maiz$geoid==1201]<-"Carolina"
+data_maiz$municipio[data_maiz$geoid==1202]<-"Ciudad Barrios"
+data_maiz$municipio[data_maiz$geoid==1203]<-"Comacarán"
+data_maiz$municipio[data_maiz$geoid==1204]<-"Chapeltique"
+data_maiz$municipio[data_maiz$geoid==1205]<-"Chinameca"
+data_maiz$municipio[data_maiz$geoid==1206]<-"Chirilagua"
+data_maiz$municipio[data_maiz$geoid==1207]<-"El Tránsito"
+data_maiz$municipio[data_maiz$geoid==1208]<-"Lolotique"
+data_maiz$municipio[data_maiz$geoid==1209]<-"Moncagua"
+data_maiz$municipio[data_maiz$geoid==1210]<-"Nueva Guadalupe"
+data_maiz$municipio[data_maiz$geoid==1211]<-"Nuevo Edén de San Juan"
+data_maiz$municipio[data_maiz$geoid==1212]<-"Quelepa"
+
+data_maiz$municipio[data_maiz$geoid==1213]<-"San Antonio"
+data_maiz$municipio[data_maiz$geoid==1214]<-"San Gerardo"
+data_maiz$municipio[data_maiz$geoid==1215]<-"San Jorge"
+data_maiz$municipio[data_maiz$geoid==1216]<-"San Luis de la Reina"
+data_maiz$municipio[data_maiz$geoid==1217]<-"San Miguel"
+data_maiz$municipio[data_maiz$geoid==1218]<-"San Rafael"
+data_maiz$municipio[data_maiz$geoid==1219]<-"Sesori"
+data_maiz$municipio[data_maiz$geoid==1220]<-"Uluazapa"
+
+data_maiz$municipio[data_maiz$geoid==1301]<-"Arambala"
+data_maiz$municipio[data_maiz$geoid==1302]<-"Cacaopera"
+data_maiz$municipio[data_maiz$geoid==1303]<-"Corinto"
+data_maiz$municipio[data_maiz$geoid==1304]<-"Chilanga"
+data_maiz$municipio[data_maiz$geoid==1305]<-"Delicias de Concepción"
+data_maiz$municipio[data_maiz$geoid==1306]<-"El Divisadero"
+data_maiz$municipio[data_maiz$geoid==1307]<-"El Rosario"
+data_maiz$municipio[data_maiz$geoid==1308]<-"Gualococti"
+data_maiz$municipio[data_maiz$geoid==1309]<-"Guatajiagua"
+data_maiz$municipio[data_maiz$geoid==1310]<-"Joateca"
+data_maiz$municipio[data_maiz$geoid==1311]<-"Jocoaitique"
+data_maiz$municipio[data_maiz$geoid==1312]<-"Jocoro"
+data_maiz$municipio[data_maiz$geoid==1313]<-"Lolotiquillo"
+data_maiz$municipio[data_maiz$geoid==1314]<-"Meanguera"
+data_maiz$municipio[data_maiz$geoid==1315]<-"Osicala"
+data_maiz$municipio[data_maiz$geoid==1316]<-"Perquín"
+data_maiz$municipio[data_maiz$geoid==1317]<-"San Carlos"
+data_maiz$municipio[data_maiz$geoid==1318]<-"San Fernando"  ### no hay en ehpm
+data_maiz$municipio[data_maiz$geoid==1319]<-"San Francisco Gotera"
+data_maiz$municipio[data_maiz$geoid==1320]<-"San Isidro"
+
+data_maiz$municipio[data_maiz$geoid==1321]<-"San Simón"
+data_maiz$municipio[data_maiz$geoid==1322]<-"Sensembra"
+data_maiz$municipio[data_maiz$geoid==1323]<-"Sociedad"
+data_maiz$municipio[data_maiz$geoid==1324]<-"Torola"
+data_maiz$municipio[data_maiz$geoid==1325]<-"Yamabal"
+data_maiz$municipio[data_maiz$geoid==1326]<-"Yoloaiquín"
+
+
+data_maiz$municipio[data_maiz$geoid==1401]<-"Anamorós"
+data_maiz$municipio[data_maiz$geoid==1402]<-"Bolívar"
+data_maiz$municipio[data_maiz$geoid==1403]<-"Concepción de Oriente"
+data_maiz$municipio[data_maiz$geoid==1404]<-"Conchagua"
+data_maiz$municipio[data_maiz$geoid==1405]<-"El Carmen"
+data_maiz$municipio[data_maiz$geoid==1406]<-"El Sauce"
+data_maiz$municipio[data_maiz$geoid==1407]<-"Intipucá"
+data_maiz$municipio[data_maiz$geoid==1408]<-"La Unión"
+data_maiz$municipio[data_maiz$geoid==1409]<-"Lislique"
+data_maiz$municipio[data_maiz$geoid==1410]<-"Meanguera del Golfo"
+data_maiz$municipio[data_maiz$geoid==1411]<-"Nueva Esparta"
+data_maiz$municipio[data_maiz$geoid==1412]<-"Pasaquina"
+data_maiz$municipio[data_maiz$geoid==1413]<-"Polorós"
+data_maiz$municipio[data_maiz$geoid==1414]<-"San Alejo"
+data_maiz$municipio[data_maiz$geoid==1415]<-"San José"
+data_maiz$municipio[data_maiz$geoid==1416]<-"Santa Rosa de Lima"
+data_maiz$municipio[data_maiz$geoid==1417]<-"Yayantique"
+data_maiz$municipio[data_maiz$geoid==1418]<-"Yucuaiquín"
+
+muni<-data_maiz %>%
+  mutate(geo_code=paste(departamento,municipio, sep=' ')) %>%
+  select(geo_code, FACTOR, S03P07, geoid) %>% mutate(geoid=as.factor(geoid))
+
+
+
+a<-muni %>% select(geoid) %>% unique()
+b<-muni %>% select(geo_code) %>% unique()
+test<-muni %>% mutate(corn_prod=S03P07*FACTOR) %>% select(corn_prod, geoid) 
+test<-aggregate(.~geoid, test, FUN=sum )
+
+
+muni<-muni %>% mutate(corn_prod=S03P07*FACTOR) %>% select(corn_prod, geo_code)
+muni<-aggregate(.~geo_code, muni, FUN=sum )
+st(muni)
+
+summary(muni)
+
+select<-dplyr:: select
+muni<-muni %>% mutate(h_mig= ntile(corn_prod,2))%>% 
+  select(geo_code, hmigagro=h_mig)
+
+
+outdir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/intermediate"
+
+setwd(outdir)
+
+save (muni, file='cenagro_rank.RData')
+  
+  

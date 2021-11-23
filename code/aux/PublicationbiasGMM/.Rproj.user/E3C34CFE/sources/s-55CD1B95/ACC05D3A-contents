@@ -1,0 +1,188 @@
+rm(list=ls())
+
+packages_vector <- c("foreign", "ggplot2",'tidyverse', 'dplyr', 'plyr', 'pastecs', 'Hmisc',
+                     'doBy','expss', 'maps','data.table', 'tigris','readxl' ,'fuzzyjoin',
+                     "maps", "sjlabelled", "rgdal", "tmaptools", "tigris", "tmap", 'wesanderson',
+                     'plm','corrplot','ISLR', 'gridExtra','jtools',"stargazer", 'rgdal',
+                     'raster','vistime','webshot','plotly','hrbrthemes','factoextra','kableExtra','klaR',
+                     'vtable','ggrepel','ggsci','scales','ihs','xtable','sandwich','remotes','gtools','lmtest',
+                     'multiwayvcov','sandwich')
+
+#install.packages(packages_vector)
+lapply(packages_vector, require, character.only = TRUE)
+
+dir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/final"
+setwd(dir)
+load(file='laboral.RData')
+
+outdirleaf<-"/Users/jimenaromero/Dropbox/Aplicaciones/Overleaf/IRV_Salvador/tables"
+
+series<-laboral
+
+a<-series %>% filter(total_month_salary==0)
+a<-a %>% filter(total_weekly_hours>0)
+rm(laboral)
+
+series<-series %>%
+  mutate(imigrante_interno_geo_year=imigrante_interno_per_07*survyear) %>%
+  mutate(emigrante_interno_geo_year=emigrante_interno_per_07*survyear) %>%
+  mutate(imigrante_externo_geo_year=imigrante_externo_per_07*survyear) %>%
+  mutate(agri_household =ifelse(hagri==1&htrabajo==1,1,0)) %>%
+  mutate(ingagro_with_nas=ifelse(ingagro==0, NA, ingagro))%>%
+  mutate(empleo_hh=ifelse(hagriempleador==1,'empleador',ifelse(hagriauto==1,'auto',ifelse(agrpeon==1,'peon','otro'))))%>%
+  mutate(categoria=ifelse(empleador=='¿Empleador/a  o patrono/a?'|empleador=='Empleador(a) o patrono(a)'|empleador=='¿Empleador o patrono?','empleador',
+                          ifelse(empleador=='¿Cuenta propio con local?'|empleador=='¿Cuenta propia sin local?'|empleador=='¿Cuenta propia con local?'|empleador=='Cuenta propia con local'|empleador=='Cuenta propia sin local','autoempleado',
+                                 ifelse(empleador=='¿Asalariado/a permanente?'|empleador=='¿Asalariado/a temporal?'|empleador=='¿Aprendiz?'|empleador=='Aprendiz'| empleador=='¿Asalariado permanente?'|empleador=='¿Asalariado temporal?'|empleador=='Asalariado(a) permanente'|empleador=='Asalariado(a) temporal','peon',
+                                        ifelse(empleador=='Familiar no remunerado(a)'|empleador=='¿Familiar no remunerado?'|empleador=='Familiar no remunerado', 'familiar','otro')))))
+
+
+series<-series %>% mutate(weekly_hours=workhours+workhourswd)
+series<-series %>% mutate(agri)
+series_extensive<-series %>%
+  mutate(weekly_hours=ifelse(is.na(weekly_hours),0, weekly_hours)) %>%
+  mutate(total_month_salary_deflated=ifelse(is.na(total_month_salary_deflated),0, total_month_salary_deflated)) %>%
+  mutate(ihs_weekly_hours=(weekly_hours+weekly_hours^2+1)^0.5) %>%
+  mutate(ihs_salary=total_month_salary_deflated+((total_month_salary_deflated^2)+1)^0.5) %>%
+  mutate(salary_hour=ifelse(total_month_salary_deflated==0|weekly_hours==0,0, (total_month_salary_deflated/4)/weekly_hours )) %>%
+  mutate(ihs_salary_hour=(salary_hour+salary_hour^2+1)^0.5)
+
+
+series_intensive <-series %>%
+  mutate(total_month_salary_with_nas=ifelse(trabajo==0|total_month_salary_deflated==0, NA, total_month_salary_deflated)) %>%
+  mutate(log_month_salary_with_nas=log(total_month_salary_with_nas))%>%
+  mutate(weekly_hours_with_nas=ifelse(trabajo==0|weekly_hours==0, NA, weekly_hours)) %>%
+  mutate(weekly_hours_with_nas=ifelse(weekly_hours_with_nas==0, NA, weekly_hours_with_nas)) %>%
+  mutate(salary_hour_with_na=ifelse(trabajo==0, NA, log_month_salary_with_nas/weekly_hours_with_nas))%>%
+  mutate(log_weekly_hours_with_nas=log(weekly_hours_with_nas))%>%
+  mutate(log_salary_hour_with_na=log(salary_hour_with_na))
+
+select<-dplyr::select
+
+a<-series_intensive %>% select(trabajo, log_weekly_hours_with_nas, agri, trabajo, total_month_salary_with_nas, log_salary_hour_with_na, hpc2sd1, hightemp2sd_primera1, gen, age, survyear, month) %>%
+  mutate(period=ifelse(month<=6,1,0)) %>% select(-month)
+
+st(a, group='period', group.test=TRUE)
+
+
+
+decimals<-3
+
+p.stars <-function(pval, se) {
+  if (pval<=0.001) {
+    se<-paste(se, '***',sep='' )
+  } else if  (pval>0.001 & pval<=0.05) {
+    se<-paste(se, '**',sep='' )
+  } else if  (pval>0.05 & pval<=0.1) {
+    se<-paste(se, '*',sep='' )
+  } else {
+    se<-se
+  }
+}
+
+
+toformat <-function(number, n) {
+  number=as.character(prettyNum(round(number,n),nsmall=n, big.mark=',', format=f))
+}
+
+
+### table 1 #####
+seriest<-series_extensive
+rm(series_extensive, series_intensive, a, series)
+
+seriest<-seriest %>% mutate(nagri=ifelse(trabajo==1&agri==0,1,0)) %>%
+  mutate(salario=ifelse(is.na(total_month_salary_deflated)|total_month_salary_deflated==0,0,1))
+
+#### Formula
+formula.1<- trabajo ~  highrain2sd_primera1+lowrain2sd_primera1+ hightemp2sd_primera1+hist_tempmean +hpc2sd1+ prec_hist_mean+ prec_hist_sd +gen+age+ed + factor(survyear)+ factor(geo_code)+ Extrema_pobreza_05_year+ adole_sin_escuel_05_year + perc_agricolas_05_year+Pobreza_05_year+Increso_pc_mensual_05_year+adole_sin_escuel_05_year+sin_agua_05_year+ elevation_mean_year +extension_year+age_less_19_geo_year +age_more_60_geo_year+imigrante_interno_geo_year+emigrante_interno_geo_year
+formula.2<- agri ~ highrain2sd_primera1+lowrain2sd_primera1+hightemp2sd_primera1 +hist_tempmean +hpc2sd1++ prec_hist_mean+ prec_hist_sd +gen+age+ed + factor(survyear)+ factor(geo_code)+ Extrema_pobreza_05_year+ adole_sin_escuel_05_year + perc_agricolas_05_year+Pobreza_05_year+Increso_pc_mensual_05_year+adole_sin_escuel_05_year+sin_agua_05_year+ elevation_mean_year +extension_year+age_less_19_geo_year +age_more_60_geo_year+imigrante_interno_geo_year+emigrante_interno_geo_year
+formula.3<- nagri ~  highrain2sd_primera1+lowrain2sd_primera1+hightemp2sd_primera1 +hist_tempmean+hpc2sd1+ + prec_hist_mean+ prec_hist_sd +gen+age+ed + factor(survyear)+ factor(geo_code)+ Extrema_pobreza_05_year+ adole_sin_escuel_05_year + perc_agricolas_05_year+Pobreza_05_year+Increso_pc_mensual_05_year+adole_sin_escuel_05_year+sin_agua_05_year+ elevation_mean_year +extension_year+age_less_19_geo_year +age_more_60_geo_year+imigrante_interno_geo_year+emigrante_interno_geo_year
+formula.4<- salario ~  hpc2sd1++highrain2sd_primera1+lowrain2sd_primera1+hightemp2sd_primera1 +hist_tempmean + prec_hist_mean+ prec_hist_sd +gen+age+ed + factor(survyear)+ factor(geo_code)+ Extrema_pobreza_05_year+ adole_sin_escuel_05_year + perc_agricolas_05_year+Pobreza_05_year+Increso_pc_mensual_05_year+adole_sin_escuel_05_year+sin_agua_05_year+ elevation_mean_year +extension_year+age_less_19_geo_year +age_more_60_geo_year+imigrante_interno_geo_year+emigrante_interno_geo_year
+
+
+
+x.1.all<-lm(formula = formula.1, data = seriest )
+
+test<-cluster.vcov(x.1.all, ~survyear+geo_code)
+se.1.all<-coeftest(x.1.all, test)
+
+p.1.all.lag<-se.1.all['hightemp2sd_primera1', "Pr(>|t|)"]
+se.1.all.lag<-se.1.all['hightemp2sd_primera1', "Std. Error"]
+se.1.all.lag<-paste("(",toformat(se.1.all.lag,decimals),")",sep="")
+coef.1.all.lag<- toformat(x.1.all$coefficients['hightemp2sd_primera1'], decimals)
+obs.all1<-toformat(length(fitted(x.1.all)), 0)
+se.1.all.lag<-p.stars(p.1.all.lag, se.1.all.lag)
+mean.all1<-toformat(mean(seriest$trabajo, na.rm=TRUE),decimals)
+
+rm(x.1.all, test)
+
+
+x.2.all<-lm(formula = formula.2, data = seriest )
+test<-cluster.vcov(x.2.all, ~survyear+geo_code)
+se.2.all<-coeftest(x.2.all, test)
+p.2.all.lag<-se.2.all['hightemp2sd_primera1', "Pr(>|t|)"]
+se.2.all.lag<-se.2.all['hightemp2sd_primera1', "Std. Error"]
+se.2.all.lag<-paste("(",toformat(se.2.all.lag,decimals),")",sep="")
+coef.2.all.lag<- toformat(x.2.all$coefficients['hightemp2sd_primera1'], decimals)
+obs.all2<-toformat(length(fitted(x.2.all)), 0)
+se.2.all.lag<-p.stars(p.2.all.lag, se.2.all.lag)
+mean.all2<-toformat(mean(seriest$agri, na.rm=TRUE),decimals)
+
+
+rm(x.2.all, test)
+
+x.3.all<-lm(formula = formula.3, data = seriest )
+test<-cluster.vcov(x.3.all, ~survyear+geo_code)
+se.3.all<-coeftest(x.3.all, test)
+p.3.all.lag<-se.3.all['hightemp2sd_primera1', "Pr(>|t|)"]
+se.3.all.lag<-se.3.all['hightemp2sd_primera1', "Std. Error"]
+se.3.all.lag<-paste("(",toformat(se.3.all.lag,decimals),")",sep="")
+coef.3.all.lag<- toformat(x.3.all$coefficients['hightemp2sd_primera1'], decimals)
+obs.all3<-toformat(length(fitted(x.3.all)), 0)
+se.3.all.lag<-p.stars(p.3.all.lag, se.3.all.lag)
+mean.all3<-toformat(mean(seriest$nagri, na.rm=TRUE),decimals)
+rm(x.3.all, test)
+
+
+x.4.all<-lm(formula = formula.4, data = seriest)
+test<-cluster.vcov(x.4.all, ~survyear+geo_code)
+se.4.all<-coeftest(x.4.all, test)
+p.4.all.lag<-se.4.all['hightemp2sd_primera1', "Pr(>|t|)"]
+se.4.all.lag<-se.4.all['hightemp2sd_primera1', "Std. Error"]
+se.4.all.lag<-paste("(",toformat(se.4.all.lag,decimals),")",sep="")
+coef.4.all.lag<- toformat(x.4.all$coefficients['hightemp2sd_primera1'], decimals)
+obs.all4<-toformat(length(fitted(x.4.all)), 0)
+se.4.all.lag<-p.stars(p.4.all.lag, se.4.all.lag)
+mean.all4<-toformat(mean(seriest$salario, na.rm=TRUE),decimals)
+
+rm(x.4.all, test)
+
+
+
+
+consolidated.all<- data.frame("group"=c("","All Working Age Individuals","","Mean","Obs","" ),
+                              "Reg 1"=c("",coef.1.all.lag,se.1.all.lag,mean.all1,obs.all1,""),
+                              "Reg 2"=c("",coef.2.all.lag,se.2.all.lag,mean.all2,obs.all2,""),
+                              "Reg 3"=c("",coef.3.all.lag,se.3.all.lag,mean.all3,obs.all3,""),
+                              "Reg 4"=c("",coef.4.all.lag,se.4.all.lag,mean.all4,obs.all4,"")
+)
+
+final.notes<-data.frame("group"=c("Crime, Weather and Household","Year Fixed Effects","Municipal Fixed Effects","Municipal Socio*Year" ,"Geographic*Year"),
+                        "Reg 1"=c("X","X","X","X","X"),
+                        "Reg 2"=c("X","X","X","X","X"),
+                        "Reg 3"=c("X","X","X","X","X"),
+                        "Reg 4"=c("X","X","X","X","X"))
+
+
+names(consolidated.all)<-c("Population Group","Has Job","Agriculture","Non Agriculture","Works for wage")
+
+consolidated.all.tex <- xtable(consolidated.all,
+                                 caption="Impact of Temperature Shocks in First-Harvest Season on  labor outcomes")
+setwd(outdirleaf)
+
+print(consolidated.all.tex, file = "labor_jessoe_2sdshock.tex", compress = FALSE,
+      include.rownames=FALSE,
+      size = "small",
+      caption.placement =  "top")
+
+
+

@@ -1,0 +1,119 @@
+rm(list=ls())
+
+packages_vector <- c("foreign", "ggplot2",'tidyverse', 'dplyr', 'plyr', 'pastecs', 'Hmisc',
+                     'doBy','expss', 'maps','data.table', 'tigris','readxl' ,'fuzzyjoin',
+                     "maps", "sjlabelled", "rgdal", "tmaptools", "tigris", "tmap", 'wesanderson',
+                     'plm','corrplot','ISLR', 'gridExtra','jtools',"stargazer", 'rgdal',
+                     'raster','vistime','webshot','plotly','hrbrthemes','factoextra','kableExtra','klaR',
+                     'vtable','ggrepel','ggsci','scales','ihs','xtable','sandwich','remotes','gtools','lmtest',
+                     'multiwayvcov','sandwich')
+
+#install.packages(packages_vector)
+lapply(packages_vector, require, character.only = TRUE)
+select<-dplyr::select
+dir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/final"
+setwd(dir)
+load(file='laboral.RData')
+
+outdirleaf<-"/Users/jimenaromero/Dropbox/Aplicaciones/Overleaf/IRV_Salvador/tables"
+series<-laboral %>% filter(Representative ==1)
+b<-series %>% select(geo_code, survyear, hightemp2sd_primera1, highrain2sd_primera1, lowrain2sd_primera1,hist_tempmean,hist_sd_primera)
+b<-aggregate(.~survyear+geo_code, b, FUN=first)
+
+## average salary
+a<- series %>% select(geo_code,survyear, total_month_salary_deflated) %>% filter(!is.na(total_month_salary_deflated))
+a<-aggregate(.~survyear+geo_code, a, FUN=mean)
+names(a)[3]<-'salary'
+
+## average salary agri
+c<- series %>% filter(agri==1) %>% select(geo_code,survyear, total_month_salary_deflated) %>% filter(!is.na(total_month_salary_deflated))
+c<-aggregate(.~survyear+geo_code, c, FUN=mean)
+names(c)[3]<-'salary_agri'
+
+## average salary non agri
+d<- series %>% filter(agri==0) %>% select(geo_code,survyear, total_month_salary_deflated) %>% filter(!is.na(total_month_salary_deflated))
+d<-aggregate(.~survyear+geo_code, d, FUN=mean)
+names(d)[3]<-'salary_nagri'
+
+b<-merge(b,a, by=c('geo_code','survyear'))
+b<-merge(b,c, by=c('geo_code','survyear'))
+b<-merge(b,d, by=c('geo_code','survyear'))
+
+municipality<-b
+save(municipality, file='municipality_labor.Rdata')
+
+## regression
+
+formula.1<- salary ~  highrain2sd_primera1+lowrain2sd_primera1+ hightemp2sd_primera1
+formula.2<- salary ~  highrain2sd_primera1+lowrain2sd_primera1+ hightemp2sd_primera1 + hist_tempmean +hist_sd_primera
+formula.3<- salary ~  highrain2sd_primera1+lowrain2sd_primera1+ hightemp2sd_primera1 + hist_tempmean +hist_sd_primera +factor(survyear)+ factor(geo_code)
+
+
+x.1<-lm(formula = formula.1, data = b )
+x.2<-lm(formula = formula.2, data = b)
+x.3<-lm(formula = formula.3, data = b )
+
+
+test<-cluster.vcov(x.3, ~survyear+geo_code)
+x.4<-coeftest(x.3, test)
+
+stargazer(x.1,x.2,x.3, x.4,
+          omit = c('geo_code','survyear', 'hist_tempmean','hist_sd_primera','Constant','highrain2sd_primera1','lowrain2sd_primera1'),
+          type='text',model.names =FALSE,
+          add.lines = list(c('historic controls','','X','X','X'),
+                           c('fixed effects','','','X','X'),
+                           c('clustered SE','','','','X')))
+
+
+## regression agri
+
+formula.1<- salary_agri ~  highrain2sd_primera1+lowrain2sd_primera1+ hightemp2sd_primera1
+formula.2<- salary_agri ~  highrain2sd_primera1+lowrain2sd_primera1+ hightemp2sd_primera1 + hist_tempmean +hist_sd_primera
+formula.3<- salary_agri ~  highrain2sd_primera1+lowrain2sd_primera1+ hightemp2sd_primera1 + hist_tempmean +hist_sd_primera +factor(survyear)+ factor(geo_code)
+
+
+x.1<-lm(formula = formula.1, data = b )
+x.2<-lm(formula = formula.2, data = b)
+x.3<-lm(formula = formula.3, data = b )
+
+
+test<-cluster.vcov(x.3, ~survyear+geo_code)
+x.4<-coeftest(x.3, test)
+
+stargazer(x.1,x.2,x.3, x.4,
+          omit = c('geo_code','survyear', 'hist_tempmean','hist_sd_primera','Constant','highrain2sd_primera1','lowrain2sd_primera1'),
+          type='text',model.names =FALSE,
+          add.lines = list(c('historic controls','','X','X','X'),
+                           c('fixed effects','','','X','X'),
+                           c('clustered SE','','','','X')))
+
+
+
+## regression nagri
+
+formula.1<- salary_nagri ~  highrain2sd_primera1+lowrain2sd_primera1+ hightemp2sd_primera1
+formula.2<- salary_nagri ~  highrain2sd_primera1+lowrain2sd_primera1+ hightemp2sd_primera1 + hist_tempmean +hist_sd_primera
+formula.3<- salary_nagri ~  highrain2sd_primera1+lowrain2sd_primera1+ hightemp2sd_primera1 + hist_tempmean +hist_sd_primera +factor(survyear)+ factor(geo_code)
+
+
+x.1<-lm(formula = formula.1, data = b )
+x.2<-lm(formula = formula.2, data = b)
+x.3<-lm(formula = formula.3, data = b )
+
+
+test<-cluster.vcov(x.3, ~survyear+geo_code)
+x.4<-coeftest(x.3, test)
+
+stargazer(x.1,x.2,x.3, x.4,
+          omit = c('geo_code','survyear', 'hist_tempmean','hist_sd_primera','Constant','highrain2sd_primera1','lowrain2sd_primera1'),
+          type='text',model.names =FALSE,
+          add.lines = list(c('historic controls','','X','X','X'),
+                           c('fixed effects','','','X','X'),
+                           c('clustered SE','','','','X')))
+
+
+
+
+
+
+

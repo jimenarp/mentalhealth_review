@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1620408036794.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1410084400",
+    "id" : "E7933DA5",
+    "lastKnownWriteTime" : 1614186595,
+    "last_content_update" : 1614186595,
+    "path" : "~/Dropbox/Migration/Drafts/tables/_table8_ migration_networks.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "37,51",
+        "scrollLine" : "0"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 8,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

@@ -1,0 +1,7 @@
+"","population","control_n","outcome","outcome_dummy","treatment_effect","se_treatment_effect","end_sd_con","end_mean_con","bas_sd_con","bas_mean_con","mean_input","se_input","z_treatment_effect","z_se","t_effect"
+"1","adolescents",755,"depression & anxiety (NCSR-AS)",1,-0.01,0.02,NA,NA,0.317811264746862,0.114,0.114,0.317811264746862,0.0314519411136754,0.0629038822273508,-0.5
+"2","adolescents (girls)",381,"depression & anxiety (NCSR-AS)",1,-0.06,0.02,NA,NA,NA,NA,NA,NA,NA,NA,-3
+"3","adolescents (boys)",374,"depression & anxiety (NCSR-AS)",1,0.03,0.02,NA,NA,NA,NA,NA,NA,NA,NA,1.5
+"4","adolescents",755,"psychological distress",0,-0.01,0.02,0.417018577981872,NA,NA,0.27,0.27,0.417018577981872,0.0239696303998129,0.0479392607996257,-0.5
+"5","adolescents (girls)",381,"psychological distress",0,-0.04,0.02,0.297645707230874,NA,NA,NA,NA,0.297645707230874,0.134276928180581,0.0671384640902906,-2
+"6","adolescents (boys)",374,"psychological distress",0,0.02,0.02,0.292043139625465,NA,NA,NA,NA,0.292043139625465,-0.0684238429326753,0.0684238429326753,1

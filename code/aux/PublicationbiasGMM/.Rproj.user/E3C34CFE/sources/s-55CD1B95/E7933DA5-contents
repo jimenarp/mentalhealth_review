@@ -1,0 +1,89 @@
+packages_vector <- c("foreign", "ggplot2",'tidyverse', 'dplyr', 'plyr', 'pastecs', 'Hmisc',
+                     'doBy','expss', 'maps','data.table', 'tigris','readxl' ,'fuzzyjoin',
+                     "maps", "sjlabelled", "rgdal", "tmaptools", "tigris", "tmap", 'wesanderson',
+                     'plm','corrplot','ISLR', 'gridExtra','jtools',"stargazer", 'rgdal', 
+                     'raster','vistime','webshot','plotly','hrbrthemes','factoextra','kableExtra','klaR',
+                     'vtable','ggrepel','ggsci','scales','ihs','xtable','lmtest')
+
+#install.packages(packages_vector)
+lapply(packages_vector, require, character.only = TRUE) 
+dir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/final"
+setwd(dir)
+load(file='series.RData')
+load(file='ehpm_series.RData')
+load(file='mag.RData')
+series$has_lands<-series$agriprop
+
+select<-dplyr::select
+
+outdir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/tables"
+outdirleaf<-"/Users/jimenaromero/Dropbox/Aplicaciones/Overleaf/IRV_Salvador/tables"
+
+
+
+
+
+series<-series %>% 
+  mutate(imigrante_interno_geo_year=imigrante_interno_per_07*survyear) %>%
+  mutate(emigrante_interno_geo_year=emigrante_interno_per_07*survyear) %>%
+  mutate(imigrante_externo_geo_year=imigrante_externo_per_07*survyear) 
+
+series<-series %>% mutate(mig_members=mig_members*100)
+select<-dplyr::select
+
+a<-series
+a<-a %>% select(geo_code, mig_pop_07)
+a<-aggregate(.~geo_code, a, FUN=first)
+a<-a %>% mutate(h_mig= ntile(mig_pop_07,2)) %>% select(-c('mig_pop_07'))
+series<-merge(series, a, by='geo_code', all.x=TRUE)
+
+
+series<-series %>% group_by(survyear) %>% mutate(dup=duplicated(householdid))
+series<-series %>% filter(dup==FALSE)
+
+formula.1<- mig_members ~   hightemp2sd_primera1 + highrain2sd_primera1+lowrain2sd_primera1 +hpc2sd1+hist_tempmean + prec_hist_mean+ prec_hist_sd +hgen+hage+n_members + factor(survyear)+ factor(geo_code)+ Extrema_pobreza_05_year+ adole_sin_escuel_05_year + perc_agricolas_05_year+Pobreza_05_year+Increso_pc_mensual_05_year+adole_sin_escuel_05_year+sin_agua_05_year+ elevation_mean_year +extension_year+age_less_19_geo_year +age_more_60_geo_year+imigrante_interno_geo_year+emigrante_interno_geo_year 
+
+x.1.agri<-lm(formula = formula.1, data = series %>% filter(htrabajo==1& hagri==1 & h_mig==1))
+x.2.agri<-lm(formula = formula.1, data = series %>% filter(htrabajo==1& hagri==1 & h_mig==2))
+
+
+se_v1.agri<-coeftest(x.1.agri, vcov = vcovCL, cluster = ~ survyear + geo_code)
+se_v1.agri<-se_v1.agri[,2]
+
+se_v2.agri<-coeftest(x.2.agri, vcov = vcovCL, cluster = ~ survyear + geo_code)
+se_v2.agri<-se_v2.agri[,2]
+
+
+mean1<-round(mean(series$mig_members[series$htrabajo==1&series$hagri==1&series$h_mig==1], na.rm=TRUE),3)
+mean2<-round(mean(series$mig_members[series$htrabajo==1&series$hagri==1&series$h_mig==2], na.rm=TRUE),3)
+
+setwd(outdirleaf)
+
+stargazer(x.1.agri, x.2.agri, type = "text", 
+          se=list(se_v1.agri,se_v2.agri), 
+          omit= c('geo_code','Constant', 'survyear', 'max_ed','riego_maiz',
+                  'n_members','class','prec_hist_mean', 'tempmean_primera',
+                  'sum_rainfall_primera','prec_hist_mean','hpc_histmean',
+                  'hist_tempmean','hpc2sd','prec_hist_sd', 'tempmean',
+                  'Extrema_pobreza_05', 'Pobreza_05','Increso_pc_mensual_05',
+                  'perc_agricolas_05', 'perc_agricolas_05','adole_sin_escuel_05',
+                  'hgen','hage','agua','geo_year','imigrante_interno_geo_year','emigrante_interno_geo_year',
+                  'Extrema_pobreza_05_year', 'Pobreza_05_year','Increso_pc_mensual_05_year',
+                  'perc_agricolas_05_year', 'perc_agricolas_05_year','adole_sin_escuel_05_year',
+                  'hgen','hage','agua','geo_year','sin_agua_05_year','joven_desem_05_year',
+                  'highrain2sd_primera1','lowrain2sd_primera1',
+                  'rain_less_400_primera1','rain_more_600_primera1','elevation_mean_year','extension_year'),
+          column.labels = c("Below the Median", "Above the Median"),
+          font.size='small',  column.sep.width = "0pt",
+          omit.stat = c('f',"adj.rsq", "ser"), header=FALSE,  
+          add.lines=   list(c("Mean Migration Likelihood", mean1, mean2),
+                            c("Crime, Weather and Household"  , "X" , "X" , "X" , "X" ), 
+                                        c("Year Fixed Effects",  "X","X", "X","X"),  
+                                        c("Municipal Fixed Effects",  "X","X", "X","X"),
+                                        c("Municipal Socio*Year",  "X","X", "X","X"),
+                                        c("Geographic*Year",  "X","X", "X","X")),
+          covariate.labels = c("Temperature Shock $t-1$"),
+          dep.var.caption = "",omit.table.layout = "n",
+          dep.var.labels.include = FALSE,
+          title = "Effects Temperature Shocks in First-Season Harvest on Migration Likelihood \\\\ Heterogeneity by Share of Emigrants per District",
+          out='migration_networks_two.tex')

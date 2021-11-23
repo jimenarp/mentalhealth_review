@@ -1,0 +1,549 @@
+
+rm(list=ls())
+datadir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/intermediate"
+setwd(datadir)
+
+load(file = 'laboral_premerge.RData')
+
+
+laboral<-laboral %>% filter(month<=6)
+
+laboral <-laboral %>%
+  mutate(other_salary=extrahours*extrahours_times+salary_food*salary_food_times+salary_merc*salary_merc_times+salary_clothes*salary_clothes_times+salary_housing*salary_housing_times+salary_transport*salary_transport_times) %>%
+  mutate(total_weekly_hours=workhours+workhourswd+secondaryhours) %>%
+  mutate(total_month_salary=month_salary_dependent+month_salary_independent)
+
+laboral<-laboral %>% mutate(gen=ifelse(gen=="Hombre"|gen=='masculino',1,0))
+
+laboral<-laboral %>% drop_na(mig_members) #3
+laboral<-laboral %>% drop_na(municipality) #107
+laboral$mig_time<-as.numeric(laboral$mig_time)
+laboral$mig_year<-laboral$survyear-laboral$mig_time
+laboral$cov_year<-laboral$survyear
+#laboral$cov_year[laboral$mig_members==1]<-laboral$mig_year[laboral$mig_members==1] #778 missings
+#x<-ehpm_series[ehpm_series$mig_members==1,]
+#y<-x[is.na(x$mig_year),] missings parecen ser random
+#laboral<-laboral %>% drop_na(cov_year) #778
+laboral$mig_time<-NULL 
+laboral$mig_year<-NULL 
+
+laboral$geo_year<-paste(laboral$geo_code, laboral$cov_year, sep="") 
+
+rm(data_geo, data_head, data_hogares, data_in, data, agricola, ehpm2015, ehpm2016, ehpm2017, ehpm2018, key_geo)
+
+
+## merge temperature
+
+load(file = 'temperature_ehpm.RData')
+
+# nasa temp
+laboral$municipality[laboral$municipality=="Mercedes la Ceiba" ]<-"Mercedes La Ceiba"
+laboral$municipality[laboral$municipality=="Santa Maria Ostuma" ]<-"Santa María Ostuma"
+laboral$municipality[laboral$municipality=="Anamoros" ]<-"Anamorós"
+laboral$municipality[laboral$municipality=="Guatajuagua"]<-"Guatajiagua"
+laboral$municipality[laboral$municipality=="San Bartolomé Perulapia" ]<-"San Bartolomé Perulapía"
+laboral$municipality[laboral$municipality=="San Idelfonso" ]<-"San Ildefonso"
+laboral$municipality[laboral$municipality=="Puerto el Triunfo"]<-"Puerto El Triunfo"
+laboral$municipality[laboral$municipality=="Delicias de Concepcion"]<- "Delicias de Concepción"
+
+laboral$geo_code<-paste(laboral$departamento, laboral$municipality, sep=" ")
+laboral$geo_year<-paste(laboral$geo_code, laboral$cov_year, sep="")
+
+laboral <- join(laboral, temp_series, by="geo_year", type='left')
+
+rm(temp_series)
+
+# precipitacion
+load(file = 'rainfall_ehpm.RData')
+
+precip_series$year<-NULL
+
+laboral <- join(laboral, precip_series, by="geo_year", type='left')
+
+
+laboral$year<-NULL
+rm(precip_series)
+
+# moisture
+load(file = 'moisture_ehpm.RData')
+
+moisture_series$survyear<-NULL
+moisture_series$geo_code<-NULL
+
+
+laboral <- join(laboral, moisture_series, by="geo_year", type='left')
+
+rm(moisture_series)
+
+
+## other databases
+
+load(file = 'homicides_pc.RData')
+
+# HPC 
+homicides_pc$geo_year<-paste(homicides_pc$geo_code, homicides_pc$year, sep="")
+laboral <- join(laboral, homicides_pc, by="geo_year", type='left')
+x<-laboral[is.na(laboral$hpc),] # hay missings porque no estaban registrados en la data original
+#(no tuvieron incidentes)
+test<-aggregate(.~survyear, laboral[c('survyear','hpc_histmean')], FUN=mean)
+
+vars<-names(homicides_pc)
+
+for (i in 1:length(vars)){
+  temp<-vars[i]
+  laboral[temp][is.na(laboral[temp])]<-0
+}
+
+
+change_name<- function(data, name_in, name_out ) {
+  data$municipality[data$municipality==name_out ]<-name_in
+  return(data)
+}
+
+
+laboral <- laboral[, !duplicated(colnames(laboral))]
+
+rm(laboral_2, household)
+
+rm(x, homicides_pc)
+
+## deflator income_pc 
+
+# inflation 
+inf<-list(0.54, 1.18, 5.13, 1.73, 0.76, 1.14, -0.73, 0.06, 1.01,1.09)
+IPC<-list(100)
+temp<-100
+for (i in 2:10){
+  int<-i-1
+  temp<-(1+inf[[int]]/100)*temp
+  IPC<-rbind(IPC, temp)
+}
+
+IPC.data <- data.frame(matrix(unlist(IPC), nrow=length(IPC), byrow=T))
+survyear<-c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018)
+
+IPC.data$survyear<-survyear
+names(IPC.data)[1]<-'IPC'
+laboral<-merge(laboral, IPC.data, by='survyear', all.x=TRUE)
+
+
+
+laboral <-laboral %>%
+  mutate(salary_dependent_deflated=salary_dependent/IPC*100) %>%
+  mutate(salary_independent_deflated=salary_independent/IPC*100) %>%
+  mutate(salary_food_deflated=salary_food/IPC*100) %>%
+  mutate(salary_clothes_deflated=salary_clothes/IPC*100) %>%
+  mutate(salary_merc_deflated=salary_merc/IPC*100) %>%
+  mutate(salary_housing_deflated=salary_housing/IPC*100) %>%
+  mutate(salary_transport_deflated=salary_transport/IPC*100) %>%
+  mutate(extrahours_deflated=extrahours/IPC*100) %>%
+  mutate(month_salary_dependent_deflated=month_salary_dependent/IPC*100) %>%
+  mutate(month_salary_independent_deflated=month_salary_independent/IPC*100)
+
+
+
+
+laboral <-laboral %>%
+  mutate(other_salary_deflated=extrahours_deflated*extrahours_times+salary_food_deflated*salary_food_times+salary_merc_deflated*salary_merc_times+salary_clothes_deflated*salary_clothes_times+salary_housing_deflated*salary_housing_times+salary_transport_deflated*salary_transport_times) %>%
+  mutate(total_month_salary_deflated=month_salary_dependent_deflated+month_salary_independent_deflated)
+
+
+
+
+datadir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/raw"
+setwd(datadir)
+poverty<-read.csv(file = 'poverty_map/poverty_data.csv')
+
+poverty<- poverty %>%
+  mutate(NAME_1=as.character(NAME_1)) %>%
+  mutate(NAME_2=as.character(NAME_2))
+select<-dplyr::select
+poverty$geo_code<-paste(poverty$NAME_1, poverty$NAME_2, sep=" ")
+poverty<-poverty %>% select(-c('NAME_1', 'NAME_2'))
+
+
+laboral<- laboral %>% mutate(ifelse(geo_code=='Chalatenango Concepcion Quezaltepeque', 
+                                    'Chalatenango Concepción Quezaltepeque',geo_code))
+laboral<-merge(laboral, poverty, by='geo_code', all.x=TRUE)
+
+
+laboral$Pobreza_05_year<-laboral$Pobreza_05*laboral$survyear
+laboral$Extrema_pobreza_05_year<-laboral$Extrema_pobreza_05*laboral$survyear
+laboral$Increso_pc_mensual_05_year<-laboral$Increso_pc_mensual_05*laboral$survyear
+laboral$perc_agricolas_05_year<-laboral$perc_agricolas_05*laboral$survyear
+laboral$adole_sin_escuel_05_year<-laboral$adole_sin_escuel_05*laboral$survyear
+laboral$joven_desem_05_year<-laboral$joven_desem_05*laboral$survyear
+laboral$sin_agua_05_year<-laboral$sin_agua_05*laboral$survyear
+rm(poverty)
+
+
+representative<-read.csv(file = 'EHPM/representative_geo.csv')
+
+
+# representative
+
+representative<-representative  %>%
+  mutate(NAME_2=as.character(NAME_2)) %>%
+  mutate(NAME_1=as.character(NAME_1)) %>% 
+  mutate(geo_code=paste(NAME_1, NAME_2, sep=" ")) %>%
+  select(-c('NAME_2', 'NAME_1'))
+
+
+laboral<-merge(laboral, representative, by='geo_code')
+
+rm(representative)
+
+
+population<-read.csv(file = 'census_2007/population_census.csv')
+
+
+# migrants census 
+
+population<-population %>% mutate(migrants_07=as.numeric(migrants_07)) %>%
+  mutate(mig_pop_07=migrants_07/population_07) %>%
+  mutate(NAME_2=as.character(NAME_2)) %>%
+  mutate(NAME_1=as.character(NAME_1)) %>% 
+  mutate(geo_code=paste(NAME_1, NAME_2, sep=" ")) %>%
+  select(-c('NAME_2', 'NAME_1')) %>%
+  mutate(imigrante_interno_per_07=imigrante_interno_07/population_07*100) %>%
+  mutate(emigrante_interno_per_07=emigrante_interno_07/population_07*100) %>%
+  mutate(imigrante_externo_per_07=imigrante_externo_07/population_07*100) %>%
+  mutate(recibe_remesas_per_07=recibe_remesas_07/population_07*100)
+
+
+
+rm(inf, IPC, IPC.data, test, names2009, names2010, names2011, names2012, names2013, names2014, names2015, names2016, names2017, names2018)
+laboral<-merge(laboral, population, by='geo_code', all.x=TRUE)
+
+
+laboral<-laboral %>% 
+  mutate(age_less_19_geo_year=age_less_19_07*survyear) %>%
+  mutate(age_19_60_geo_year=age_19_60_07*survyear) %>% 
+  mutate(age_more_60_geo_year=age_more_60_07*survyear) %>% 
+  mutate(extension_year=extension_territorial*survyear)
+
+
+laboral<-laboral %>% 
+  mutate(imigrante_interno_geo_year=imigrante_interno_per_07*survyear) %>%
+  mutate(emigrante_interno_geo_year=emigrante_interno_per_07*survyear) %>%
+  mutate(imigrante_externo_geo_year=imigrante_externo_per_07*survyear) 
+
+rm(population)
+
+load(file = 'elevation/elevation.RData')
+
+
+
+outdir <-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/final"
+
+setwd(outdir)
+
+load(file = 'municipal.RData') 
+
+laboral<-merge(laboral, municipal, by=c('geo_code', 'survyear'), all.x=TRUE)
+
+dir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/final"
+setwd(dir)
+
+elevation<- elevation %>% mutate(geo_code=paste(NAME_1, NAME_2, sep=" "))
+
+to_merge<-elevation %>% select(geo_code, mean_elevation, sd_elevation)
+
+laboral <-merge(laboral, to_merge, by=c('geo_code'), all.x=TRUE)
+
+
+laboral<-laboral %>% mutate(elevation_mean_year=mean_elevation*survyear)
+
+
+dir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/final"
+setwd(dir)
+
+laboral<-laboral %>% filter(survyear==cov_year)
+save (laboral, file='laboral_janjjun.RData')
+
+######## 
+rm(list=ls())
+datadir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/intermediate"
+setwd(datadir)
+
+load(file = 'laboral_premerge.RData')
+
+
+laboral<-laboral %>% filter(month>6)
+
+
+
+laboral <-laboral %>%
+  mutate(other_salary=extrahours*extrahours_times+salary_food*salary_food_times+salary_merc*salary_merc_times+salary_clothes*salary_clothes_times+salary_housing*salary_housing_times+salary_transport*salary_transport_times) %>%
+  mutate(total_weekly_hours=workhours+workhourswd+secondaryhours) %>%
+  mutate(total_month_salary=month_salary_dependent+month_salary_independent)
+
+laboral<-laboral %>% mutate(gen=ifelse(gen=="Hombre"|gen=='masculino',1,0))
+
+laboral<-laboral %>% drop_na(mig_members) #3
+laboral<-laboral %>% drop_na(municipality) #107
+laboral$mig_time<-as.numeric(laboral$mig_time)
+laboral$mig_year<-laboral$survyear-laboral$mig_time
+laboral$cov_year<-laboral$survyear
+#laboral$cov_year[laboral$mig_members==1]<-laboral$mig_year[laboral$mig_members==1] #778 missings
+#x<-ehpm_series[ehpm_series$mig_members==1,]
+#y<-x[is.na(x$mig_year),] missings parecen ser random
+#laboral<-laboral %>% drop_na(cov_year) #778
+laboral$mig_time<-NULL 
+laboral$mig_year<-NULL 
+
+laboral$geo_year<-paste(laboral$geo_code, laboral$cov_year, sep="") 
+
+rm(data_geo, data_head, data_hogares, data_in, data, agricola, ehpm2015, ehpm2016, ehpm2017, ehpm2018, key_geo)
+
+
+## merge temperature
+
+load(file = 'temperature_ehpm.RData')
+
+# nasa temp
+laboral$municipality[laboral$municipality=="Mercedes la Ceiba" ]<-"Mercedes La Ceiba"
+laboral$municipality[laboral$municipality=="Santa Maria Ostuma" ]<-"Santa María Ostuma"
+laboral$municipality[laboral$municipality=="Anamoros" ]<-"Anamorós"
+laboral$municipality[laboral$municipality=="Guatajuagua"]<-"Guatajiagua"
+laboral$municipality[laboral$municipality=="San Bartolomé Perulapia" ]<-"San Bartolomé Perulapía"
+laboral$municipality[laboral$municipality=="San Idelfonso" ]<-"San Ildefonso"
+laboral$municipality[laboral$municipality=="Puerto el Triunfo"]<-"Puerto El Triunfo"
+laboral$municipality[laboral$municipality=="Delicias de Concepcion"]<- "Delicias de Concepción"
+
+laboral$geo_code<-paste(laboral$departamento, laboral$municipality, sep=" ")
+laboral$geo_year<-paste(laboral$geo_code, laboral$cov_year, sep="")
+
+laboral <- join(laboral, temp_series, by="geo_year", type='left')
+
+rm(temp_series)
+
+# precipitacion
+load(file = 'rainfall_ehpm.RData')
+
+precip_series$year<-NULL
+
+laboral <- join(laboral, precip_series, by="geo_year", type='left')
+
+
+laboral$year<-NULL
+rm(precip_series)
+
+# moisture
+load(file = 'moisture_ehpm.RData')
+
+moisture_series$survyear<-NULL
+moisture_series$geo_code<-NULL
+
+
+laboral <- join(laboral, moisture_series, by="geo_year", type='left')
+
+rm(moisture_series)
+
+
+## other databases
+
+load(file = 'homicides_pc.RData')
+
+# HPC 
+homicides_pc$geo_year<-paste(homicides_pc$geo_code, homicides_pc$year, sep="")
+laboral <- join(laboral, homicides_pc, by="geo_year", type='left')
+x<-laboral[is.na(laboral$hpc),] # hay missings porque no estaban registrados en la data original
+#(no tuvieron incidentes)
+test<-aggregate(.~survyear, laboral[c('survyear','hpc_histmean')], FUN=mean)
+
+vars<-names(homicides_pc)
+
+for (i in 1:length(vars)){
+  temp<-vars[i]
+  laboral[temp][is.na(laboral[temp])]<-0
+}
+
+
+change_name<- function(data, name_in, name_out ) {
+  data$municipality[data$municipality==name_out ]<-name_in
+  return(data)
+}
+
+
+laboral <- laboral[, !duplicated(colnames(laboral))]
+
+rm(laboral_2, household)
+
+rm(x, homicides_pc)
+
+## deflator income_pc 
+
+# inflation 
+inf<-list(0.54, 1.18, 5.13, 1.73, 0.76, 1.14, -0.73, 0.06, 1.01,1.09)
+IPC<-list(100)
+temp<-100
+for (i in 2:10){
+  int<-i-1
+  temp<-(1+inf[[int]]/100)*temp
+  IPC<-rbind(IPC, temp)
+}
+
+IPC.data <- data.frame(matrix(unlist(IPC), nrow=length(IPC), byrow=T))
+survyear<-c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018)
+
+IPC.data$survyear<-survyear
+names(IPC.data)[1]<-'IPC'
+laboral<-merge(laboral, IPC.data, by='survyear', all.x=TRUE)
+
+
+
+laboral <-laboral %>%
+  mutate(salary_dependent_deflated=salary_dependent/IPC*100) %>%
+  mutate(salary_independent_deflated=salary_independent/IPC*100) %>%
+  mutate(salary_food_deflated=salary_food/IPC*100) %>%
+  mutate(salary_clothes_deflated=salary_clothes/IPC*100) %>%
+  mutate(salary_merc_deflated=salary_merc/IPC*100) %>%
+  mutate(salary_housing_deflated=salary_housing/IPC*100) %>%
+  mutate(salary_transport_deflated=salary_transport/IPC*100) %>%
+  mutate(extrahours_deflated=extrahours/IPC*100) %>%
+  mutate(month_salary_dependent_deflated=month_salary_dependent/IPC*100) %>%
+  mutate(month_salary_independent_deflated=month_salary_independent/IPC*100)
+
+
+
+
+laboral <-laboral %>%
+  mutate(other_salary_deflated=extrahours_deflated*extrahours_times+salary_food_deflated*salary_food_times+salary_merc_deflated*salary_merc_times+salary_clothes_deflated*salary_clothes_times+salary_housing_deflated*salary_housing_times+salary_transport_deflated*salary_transport_times) %>%
+  mutate(total_month_salary_deflated=month_salary_dependent_deflated+month_salary_independent_deflated)
+
+
+
+
+datadir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/raw"
+setwd(datadir)
+poverty<-read.csv(file = 'poverty_map/poverty_data.csv')
+
+poverty<- poverty %>%
+  mutate(NAME_1=as.character(NAME_1)) %>%
+  mutate(NAME_2=as.character(NAME_2))
+select<-dplyr::select
+poverty$geo_code<-paste(poverty$NAME_1, poverty$NAME_2, sep=" ")
+poverty<-poverty %>% select(-c('NAME_1', 'NAME_2'))
+
+
+laboral<- laboral %>% mutate(ifelse(geo_code=='Chalatenango Concepcion Quezaltepeque', 
+                                    'Chalatenango Concepción Quezaltepeque',geo_code))
+laboral<-merge(laboral, poverty, by='geo_code', all.x=TRUE)
+
+
+laboral$Pobreza_05_year<-laboral$Pobreza_05*laboral$survyear
+laboral$Extrema_pobreza_05_year<-laboral$Extrema_pobreza_05*laboral$survyear
+laboral$Increso_pc_mensual_05_year<-laboral$Increso_pc_mensual_05*laboral$survyear
+laboral$perc_agricolas_05_year<-laboral$perc_agricolas_05*laboral$survyear
+laboral$adole_sin_escuel_05_year<-laboral$adole_sin_escuel_05*laboral$survyear
+laboral$joven_desem_05_year<-laboral$joven_desem_05*laboral$survyear
+laboral$sin_agua_05_year<-laboral$sin_agua_05*laboral$survyear
+rm(poverty)
+
+
+representative<-read.csv(file = 'EHPM/representative_geo.csv')
+
+
+# representative
+
+representative<-representative  %>%
+  mutate(NAME_2=as.character(NAME_2)) %>%
+  mutate(NAME_1=as.character(NAME_1)) %>% 
+  mutate(geo_code=paste(NAME_1, NAME_2, sep=" ")) %>%
+  select(-c('NAME_2', 'NAME_1'))
+
+
+laboral<-merge(laboral, representative, by='geo_code')
+
+rm(representative)
+
+
+population<-read.csv(file = 'census_2007/population_census.csv')
+
+
+# migrants census 
+
+population<-population %>% mutate(migrants_07=as.numeric(migrants_07)) %>%
+  mutate(mig_pop_07=migrants_07/population_07) %>%
+  mutate(NAME_2=as.character(NAME_2)) %>%
+  mutate(NAME_1=as.character(NAME_1)) %>% 
+  mutate(geo_code=paste(NAME_1, NAME_2, sep=" ")) %>%
+  select(-c('NAME_2', 'NAME_1')) %>%
+  mutate(imigrante_interno_per_07=imigrante_interno_07/population_07*100) %>%
+  mutate(emigrante_interno_per_07=emigrante_interno_07/population_07*100) %>%
+  mutate(imigrante_externo_per_07=imigrante_externo_07/population_07*100) %>%
+  mutate(recibe_remesas_per_07=recibe_remesas_07/population_07*100)
+
+
+
+rm(inf, IPC, IPC.data, test, names2009, names2010, names2011, names2012, names2013, names2014, names2015, names2016, names2017, names2018)
+laboral<-merge(laboral, population, by='geo_code', all.x=TRUE)
+
+
+laboral<-laboral %>% 
+  mutate(age_less_19_geo_year=age_less_19_07*survyear) %>%
+  mutate(age_19_60_geo_year=age_19_60_07*survyear) %>% 
+  mutate(age_more_60_geo_year=age_more_60_07*survyear) %>% 
+  mutate(extension_year=extension_territorial*survyear)
+
+
+laboral<-laboral %>% 
+  mutate(imigrante_interno_geo_year=imigrante_interno_per_07*survyear) %>%
+  mutate(emigrante_interno_geo_year=emigrante_interno_per_07*survyear) %>%
+  mutate(imigrante_externo_geo_year=imigrante_externo_per_07*survyear) 
+
+rm(population)
+
+load(file = 'elevation/elevation.RData')
+
+
+
+outdir <-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/final"
+
+setwd(outdir)
+
+load(file = 'municipal.RData') 
+
+laboral<-merge(laboral, municipal, by=c('geo_code', 'survyear'), all.x=TRUE)
+
+dir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/final"
+setwd(dir)
+
+elevation<- elevation %>% mutate(geo_code=paste(NAME_1, NAME_2, sep=" "))
+
+to_merge<-elevation %>% select(geo_code, mean_elevation, sd_elevation)
+
+laboral <-merge(laboral, to_merge, by=c('geo_code'), all.x=TRUE)
+
+
+laboral<-laboral %>% mutate(elevation_mean_year=mean_elevation*survyear)
+
+
+dir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/final"
+setwd(dir)
+
+laboral<-laboral %>% filter(survyear==cov_year)
+save (laboral, file='laboral_juldec.RData')
+
+
+rm(list=ls())
+
+dir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/final"
+setwd(dir)
+
+load(file = 'laboral_janjjun.RData') 
+
+laboral1<-laboral
+rm(laboral)
+
+load(file = 'laboral_juldec.RData') 
+
+laboral2<-laboral
+rm(laboral)
+
+laboral<-rbind(laboral1, laboral2)
+save (laboral, file='laboral.RData')
+
+
+

@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1597998329959.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1884883242",
+    "id" : "7E68BA26",
+    "lastKnownWriteTime" : 1597995726,
+    "last_content_update" : 1597995726,
+    "path" : "~/Documents/Harvard/RAing/Isaiah Andrews/Publication Bias/Codes/GMM Estimation R/PublicationbiasGMM/R/Replication.R",
+    "project_path" : "R/Replication.R",
+    "properties" : {
+        "cursorPosition" : "40,54",
+        "scrollLine" : "21",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

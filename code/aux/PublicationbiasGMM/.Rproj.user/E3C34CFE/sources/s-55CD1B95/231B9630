@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1620355862293.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "231B9630",
+    "lastKnownWriteTime" : 1620387217,
+    "last_content_update" : 1620387217318,
+    "path" : "~/Dropbox/Migration/Drafts/tables/laboral_completo.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "343,30",
+        "scrollLine" : "0"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

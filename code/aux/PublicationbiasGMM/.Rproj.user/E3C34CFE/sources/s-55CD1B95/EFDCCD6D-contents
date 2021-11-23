@@ -1,0 +1,393 @@
+rm(list=ls()) # erase all
+packages_vector <- c("foreign", "ggplot2",'tidyverse', 'dplyr', 'plyr', 'pastecs', 'Hmisc','doBy','expss', 'maps','data.table', 'tigris','readxl' ,'fuzzyjoin',
+                     "maps", "sjlabelled", "rgdal", "tmaptools", "tigris", "tmap", 'wesanderson', 'gridExtra')
+#install.packages(packages_vector)
+lapply(packages_vector, require, character.only = TRUE) # the "lapply" function means "apply this function to the elements of this list or more restricted data type")
+
+
+
+setwd("/Users/jimenaromero/Dropbox/Migration/Drafts/code/EHPM_clean")
+#source("EHPM_2018.R")
+setwd("/Users/jimenaromero/Dropbox/Migration/Drafts/code/EHPM_clean")
+#source("EHPM_2017.R")
+setwd("/Users/jimenaromero/Dropbox/Migration/Drafts/code/EHPM_clean")
+#source("EHPM_2016.R")
+setwd("/Users/jimenaromero/Dropbox/Migration/Drafts/code/EHPM_clean")
+#source("EHPM_2015.R")
+setwd("/Users/jimenaromero/Dropbox/Migration/Drafts/code/EHPM_clean")
+#source("EHPM_2014.R")
+setwd("/Users/jimenaromero/Dropbox/Migration/Drafts/code/EHPM_clean")
+#source("EHPM_2013.R")
+#setwd("/Users/jimenaromero/Dropbox/Migration/Drafts/code/EHPM_clean")
+#source("EHPM_2012.R")
+#setwd("/Users/jimenaromero/Dropbox/Migration/Drafts/code/EHPM_clean")
+#source("EHPM_2011.R")
+setwd("/Users/jimenaromero/Dropbox/Migration/Drafts/code/EHPM_clean")
+#source("EHPM_2010.R")
+setwd("/Users/jimenaromero/Dropbox/Migration/Drafts/code/EHPM_clean")
+#source("EHPM_2009.R")
+
+
+###################
+
+datadir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/intermediate"
+setwd(datadir)
+
+
+
+load(file = 'ehpm2018.RData') 
+load(file = 'ehpm2017.RData')
+load(file = 'ehpm2016.RData')
+load(file = 'ehpm2015.RData')
+load(file = 'ehpm2014.RData')
+load(file = 'ehpm2013.RData')
+load(file = 'ehpm2012.RData')
+load(file = 'ehpm2011.RData')
+load(file = 'ehpm2010.RData')
+load(file = 'ehpm2009.RData')
+load(file = 'homicides_pc.RData')
+load(file = 'rainfall_ehpm.RData')
+load(file = 'temperature_ehpm.RData')
+load(file = 'moisture_ehpm.RData')
+
+#load(file = 'mig.law.RData')
+datadir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/raw"
+setwd(datadir)
+poverty<-read.csv(file = 'poverty_map/poverty_data.csv')
+
+representative<-read.csv(file = 'EHPM/representative_geo.csv')
+
+
+datadir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/raw"
+
+setwd(datadir)
+population<-read.csv(file = 'census_2007/population_census.csv')
+#mig<-read.csv(file = 'census_2007/population_mig.csv')
+
+load(file = 'elevation/elevation.RData')
+
+
+### EHPM  ###########################################################################################  
+
+ehpm2009$survyear<-2009
+ehpm2010$survyear<-2010
+ehpm2011$survyear<-2011
+ehpm2012$survyear<-2012
+ehpm2013$survyear<-2013
+ehpm2014$survyear<-2014
+ehpm2015$survyear<-2015
+ehpm2016$survyear<-2016
+ehpm2017$survyear<-2017
+ehpm2018$survyear<-2018
+
+ehpm2018$currents<-NULL
+ehpm2018$flood<-NULL
+
+ehpm2017$currents<-NULL
+ehpm2017$flood<-NULL
+
+ehpm2016$currents<-NULL
+ehpm2016$flood<-NULL
+
+
+ehpm2009$householdid<-as.character(ehpm2009$householdid)
+ehpm2010$householdid<-as.character(ehpm2010$householdid)
+ehpm2011$householdid<-as.character(ehpm2011$householdid)
+ehpm2012$householdid<-as.character(ehpm2012$householdid)
+ehpm2013$householdid<-as.character(ehpm2013$householdid)
+ehpm2014$householdid<-as.character(ehpm2014$householdid)
+ehpm2015$householdid<-as.character(ehpm2015$householdid)
+ehpm2016$householdid<-as.character(ehpm2016$householdid)
+ehpm2017$householdid<-as.character(ehpm2017$householdid)
+ehpm2018$householdid<-as.character(ehpm2018$householdid)
+
+
+ehpm_series<-rbind(ehpm2009, ehpm2010, ehpm2011, ehpm2012, ehpm2013, ehpm2014, ehpm2015, ehpm2016,ehpm2017, ehpm2018)
+rm(ehpm2009, ehpm2010, ehpm2011, ehpm2012, ehpm2013, ehpm2014, ehpm2015, ehpm2016, ehpm2017,ehpm2018)
+ehpm_series<-ehpm_series %>% drop_na(mig_members) #3
+ehpm_series<-ehpm_series %>% drop_na(municipality) #107
+ehpm_series$mig_time<-as.numeric(ehpm_series$mig_time)
+ehpm_series$mig_year<-ehpm_series$survyear-ehpm_series$mig_time
+ehpm_series$cov_year<-ehpm_series$survyear
+ehpm_series$cov_year[ehpm_series$mig_members==1]<-ehpm_series$mig_year[ehpm_series$mig_members==1] #778 missings
+#x<-ehpm_series[ehpm_series$mig_members==1,]
+#y<-x[is.na(x$mig_year),] missings parecen ser random
+ehpm_series<-ehpm_series %>% drop_na(cov_year) #778
+ehpm_series$mig_time<-NULL 
+ehpm_series$mig_year<-NULL 
+
+ehpm_series_raw<-ehpm_series
+#save (ehpm_series_raw, file='ehpm_series_raw.RData')
+
+#ehpm_series<-ehpm_series[ehpm_series$cov_year>=2010,]
+ehpm_series$geo_year<-paste(ehpm_series$geo_code, ehpm_series$cov_year, sep="") 
+
+### merge  ###########################################################################################  
+
+# nasa temp
+ehpm_series$municipality[ehpm_series$municipality=="Mercedes la Ceiba" ]<-"Mercedes La Ceiba"
+ehpm_series$municipality[ehpm_series$municipality=="Santa Maria Ostuma" ]<-"Santa María Ostuma"
+ehpm_series$municipality[ehpm_series$municipality=="Anamoros" ]<-"Anamorós"
+ehpm_series$municipality[ehpm_series$municipality=="Guatajuagua"]<-"Guatajiagua"
+ehpm_series$municipality[ehpm_series$municipality=="San Bartolomé Perulapia" ]<-"San Bartolomé Perulapía"
+ehpm_series$municipality[ehpm_series$municipality=="San Idelfonso" ]<-"San Ildefonso"
+ehpm_series$municipality[ehpm_series$municipality=="Puerto el Triunfo"]<-"Puerto El Triunfo"
+ehpm_series$municipality[ehpm_series$municipality=="Delicias de Concepcion"]<- "Delicias de Concepción"
+
+ehpm_series$geo_code<-paste(ehpm_series$departamento, ehpm_series$municipality, sep=" ")
+ehpm_series$geo_year<-paste(ehpm_series$geo_code, ehpm_series$cov_year, sep="")
+
+
+select<- dplyr::select
+temp_series<- temp_series %>% select(-survyear)
+ehpm_series <- join(ehpm_series, temp_series , by="geo_year", type='left')
+a<- ehpm_series %>% select(survyear, cov_year, hightemp2sd_primera1) %>% filter(survyear==cov_year)
+x<-ehpm_series[ehpm_series$geo_code=="Cuscatlán San Bartolomé Perulapía",]
+
+x<-ehpm_series[is.na(ehpm_series$tempmean),]
+y<-ehpm_series[is.na(ehpm_series$mig_members),]
+y<-unique(y$geo_year)
+x<-unique(x$geo_year)
+y<-as.data.frame(y)
+x<-as.data.frame(x) #no se encontro en temp
+
+# precipitacion
+
+precip_series$year<-NULL
+
+ehpm_series <- join(ehpm_series, precip_series, by="geo_year", type='left')
+
+
+ehpm_series$year<-NULL
+
+
+# moisture
+
+moisture_series$survyear<-NULL
+moisture_series$geo_code<-NULL
+
+
+ehpm_series <- join(ehpm_series, moisture_series, by="geo_year", type='left')
+
+# HPC 
+homicides_pc$geo_year<-paste(homicides_pc$geo_code, homicides_pc$year, sep="")
+ehpm_series <- join(ehpm_series, homicides_pc, by="geo_year", type='left')
+x<-ehpm_series[is.na(ehpm_series$hpc),] # hay missings porque no estaban registrados en la data original
+#(no tuvieron incidentes)
+test<-aggregate(.~survyear, ehpm_series[c('survyear','hpc_histmean')], FUN=mean)
+
+vars<-names(homicides_pc)
+
+for (i in 1:length(vars)){
+  temp<-vars[i]
+  ehpm_series[temp][is.na(ehpm_series[temp])]<-0
+}
+
+
+change_name<- function(data, name_in, name_out ) {
+  data$municipality[data$municipality==name_out ]<-name_in
+  return(data)
+}
+
+
+ehpm_series <- ehpm_series[, !duplicated(colnames(ehpm_series))]
+
+## deflator income_pc 
+
+# inflation 
+inf<-list(0.54, 1.18, 5.13, 1.73, 0.76, 1.14, -0.73, 0.06, 1.01,1.09)
+IPC<-list(100)
+temp<-100
+for (i in 2:10){
+  int<-i-1
+  temp<-(1+inf[[int]]/100)*temp
+  IPC<-rbind(IPC, temp)
+}
+
+IPC.data <- data.frame(matrix(unlist(IPC), nrow=length(IPC), byrow=T))
+survyear<-c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018)
+
+IPC.data$survyear<-survyear
+names(IPC.data)[1]<-'IPC'
+
+ehpm_series<-merge(ehpm_series, IPC.data, by='survyear', all.x=TRUE)
+
+ehpm_series <-ehpm_series %>%
+  mutate(ingpc_deflated=ingpc/IPC*100) %>%
+  mutate(gali_deflated=gali/IPC*100) %>%
+  mutate(galipc_deflated=gali_deflated/n_members) %>%
+  mutate(gali_pc=gali/n_members)
+
+poverty<- poverty %>%
+  mutate(NAME_1=as.character(NAME_1)) %>%
+  mutate(NAME_2=as.character(NAME_2))
+select<-dplyr::select
+poverty$geo_code<-paste(poverty$NAME_1, poverty$NAME_2, sep=" ")
+poverty<-poverty %>% select(-c('NAME_1', 'NAME_2'))
+
+
+ehpm_series<- ehpm_series %>% mutate(ifelse(geo_code=='Chalatenango Concepcion Quezaltepeque', 
+                                            'Chalatenango Concepción Quezaltepeque',geo_code))
+ehpm_series<-merge(ehpm_series, poverty, by='geo_code', all.x=TRUE)
+
+
+#population<- population %>%
+#  mutate(NAME_1=as.character(NAME_1)) %>%
+#  mutate(NAME_2=as.character(NAME_2))
+
+#population$geo_code<-paste(population$NAME_1, population$NAME_2, sep=" ")
+#population<-population %>% select(-c(NAME_1, NAME_2))
+
+
+#ehpm_series<-merge(ehpm_series, population, by='geo_code', all.x=TRUE)
+
+
+
+test<-ehpm_series %>% mutate(merged_na=is.na(Pobreza_05)) %>%
+  filter(merged_na==TRUE)
+  
+outdir <-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/final"
+setwd(outdir)
+save (ehpm_series, file='ehpm_series.RData')
+
+##################
+
+
+series<-ehpm_series %>%
+  filter(!is.na(highrain2sd_primera1 )) %>%
+  mutate(cov_suv=ifelse(cov_year==survyear,1,0)) %>%
+  mutate(mig_members=ifelse(mig_members==1&cov_suv==1,1,0))
+
+
+test<-ehpm_series %>% filter(cov_year == survyear)
+
+test<-test %>% group_by(survyear) %>% mutate(dup=duplicated(householdid))
+test<-test %>% filter(dup==FALSE)%>%filter((!is.na(hagri)&htrabajo==1)|htrabajo==0) %>% filter(!is.na(hgen))
+sum(!is.na(test$highrain2sd_primera1 )) 
+sum(is.na(test$highrain2sd_primera1 )) 
+
+series$has_lands<-series$agriprop
+
+select<-dplyr::select
+
+series<-series %>% group_by(survyear) %>% mutate(dup=duplicated(householdid))
+series<-series %>% filter(dup==FALSE) %>%filter((!is.na(hagri)&htrabajo==1)|htrabajo==0)
+
+
+select<-dplyr::select
+
+# all groups
+
+
+#agg <- aggregate(data=series, Extrema_pobreza_05 ~ geo_code, function(x) length(unique(x)))
+#agg <- aggregate(data=series, Extrema_pobreza_05 ~ geo_code, function(x) sum(is.na(x)))
+#agg <- aggregate(data=series, hist_tempmean ~ geo_code, function(x) length(unique(x)))
+
+series$Pobreza_05_year<-series$Pobreza_05*series$survyear
+series$Extrema_pobreza_05_year<-series$Extrema_pobreza_05*series$survyear
+series$Increso_pc_mensual_05_year<-series$Increso_pc_mensual_05*series$survyear
+series$perc_agricolas_05_year<-series$perc_agricolas_05*series$survyear
+series$adole_sin_escuel_05_year<-series$adole_sin_escuel_05*series$survyear
+series$joven_desem_05_year<-series$joven_desem_05*series$survyear
+series$sin_agua_05_year<-series$sin_agua_05*series$survyear
+
+
+
+save (series, file='series.RData')
+#write.csv(series,'series.csv')
+
+load(file = 'municipal.RData') 
+
+series<-merge(series, municipal, by=c('geo_code', 'survyear'), all.x=TRUE)
+
+save (series, file='series.RData')
+
+
+dir<-"/Users/jimenaromero/Dropbox/Migration/Drafts/data/final"
+setwd(dir)
+
+elevation<- elevation %>% mutate(geo_code=paste(NAME_1, NAME_2, sep=" "))
+
+to_merge<-elevation %>% select(geo_code, mean_elevation, sd_elevation)
+
+series <-merge(series, to_merge, by=c('geo_code'), all.x=TRUE)
+
+
+series<-series %>% mutate(elevation_mean_year=mean_elevation*survyear)
+
+# migrants census 
+
+population<-population %>% mutate(migrants_07=as.numeric(migrants_07)) %>%
+  mutate(mig_pop_07=migrants_07/population_07) %>%
+  mutate(NAME_2=as.character(NAME_2)) %>%
+  mutate(NAME_1=as.character(NAME_1)) %>% 
+  mutate(geo_code=paste(NAME_1, NAME_2, sep=" ")) %>%
+  select(-c('NAME_2', 'NAME_1')) %>%
+  mutate(imigrante_interno_per_07=imigrante_interno_07/population_07*100) %>%
+  mutate(emigrante_interno_per_07=emigrante_interno_07/population_07*100) %>%
+  mutate(imigrante_externo_per_07=imigrante_externo_07/population_07*100) %>%
+  mutate(recibe_remesas_per_07=recibe_remesas_07/population_07*100)
+  
+  
+
+series<-merge(series, population, by='geo_code', all.x=TRUE)
+ehpm_series<-merge(ehpm_series, population, by='geo_code', all.x=TRUE)
+
+
+series<-series %>% 
+  mutate(age_less_19_geo_year=age_less_19_07*survyear) %>%
+  mutate(age_19_60_geo_year=age_19_60_07*survyear) %>% 
+  mutate(age_more_60_geo_year=age_more_60_07*survyear) %>% 
+  mutate(extension_year=extension_territorial*survyear)
+
+
+series<-series %>% 
+  mutate(imigrante_interno_geo_year=imigrante_interno_per_07*survyear) %>%
+  mutate(emigrante_interno_geo_year=emigrante_interno_per_07*survyear) %>%
+  mutate(imigrante_externo_geo_year=imigrante_externo_per_07*survyear) 
+
+
+# representative
+
+representative<-representative  %>%
+  mutate(NAME_2=as.character(NAME_2)) %>%
+  mutate(NAME_1=as.character(NAME_1)) %>% 
+  mutate(geo_code=paste(NAME_1, NAME_2, sep=" ")) %>%
+  select(-c('NAME_2', 'NAME_1'))
+
+
+series<-merge(series, representative, by='geo_code')
+ehpm_series<-merge(ehpm_series, representative, by='geo_code')
+
+save (series, file='series.RData')
+save (ehpm_series, file='ehpm_series.RData')
+
+
+
+
+# PCA household assets
+
+vars<-c("householdid", "geo_code","survyear",  "c_techo_concreto" ,"c_paredes_concreto" ,"c_piso_solido" ,"c_propietario","electricidad","agua" ,"combustible" ,"sanitario" ,
+        "internet", "celular", "cable" ,"refri","lavadora" ,"licuadora","computadora" ,"secadora" ,"vehiculo","microhonda" ,"tv" ,"telefijo") 
+ehpm_series.sub<-subset(ehpm_series[,vars], complete.cases(ehpm_series[,vars]))
+
+
+ehpm_series.pc<-prcomp(~c_techo_concreto+c_paredes_concreto+c_piso_solido+c_propietario+electricidad+agua+combustible+sanitario+internet+celular+cable+refri+lavadora+licuadora+computadora+secadora+vehiculo+microhonda+tv+telefijo,data=ehpm_series.sub, center=T, scale=T, retx=T)
+
+
+screeplot(ehpm_series.pc, type = "l")
+summary(ehpm_series.pc)
+
+score<-ehpm_series.pc$x[,1]
+ehpm_series.sub$pca_score<-score 
+ehpm_series.sub<-ehpm_series.sub%>% select(householdid, geo_code, survyear, pca_score)
+
+ehpm_series<-merge(ehpm_series, ehpm_series.sub, by=c('householdid','survyear','geo_code'), all.x=TRUE)
+
+series<-merge(series, ehpm_series.sub, by=c('householdid','survyear','geo_code'), all.x=TRUE)
+
+
+save (series, file='series.RData')
+save (ehpm_series, file='ehpm_series.RData')
+
+
